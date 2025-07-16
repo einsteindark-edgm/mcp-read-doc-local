@@ -1,40 +1,40 @@
-# MCP PDF Extract - Documentación Completa para RAG con Contextual Retrieval
+# MCP PDF Extract - Complete Documentation for RAG with Contextual Retrieval
 
-## Contexto General del Proyecto
+## General Project Context
 
-**Nombre del Proyecto**: MCP_pdf_extract  
-**Ubicación**: `/Users/edgm/Documents/Projects/AI/MCP_pdf_extract`  
-**Propósito**: Servidor MCP (Model Context Protocol) que expone capacidades de lectura de documentos PDF a través de herramientas y recursos estandarizados.  
-**Versión Python Requerida**: 3.11 o superior (CRÍTICO: No funcionará con Python 3.9 o inferior)
+**Project Name**: MCP_pdf_extract  
+**Location**: `/Users/edgm/Documents/Projects/AI/MCP_pdf_extract`  
+**Purpose**: MCP (Model Context Protocol) server that exposes PDF document reading capabilities through standardized tools and resources.  
+**Required Python Version**: 3.11 or higher (CRITICAL: Will not work with Python 3.9 or lower)
 
-### Arquitectura del Sistema
+### System Architecture
 
-El proyecto implementa un servidor MCP que:
-1. **Expone herramientas (tools)** para que los clientes MCP puedan ejecutar operaciones
-2. **Expone recursos (resources)** para que los clientes MCP puedan acceder a datos
-3. **Se comunica via stdio** (entrada/salida estándar) usando el protocolo JSON-RPC 2.0
-4. **Lee archivos PDF** de un directorio configurado y extrae su contenido textual
+The project implements an MCP server that:
+1. **Exposes tools** for MCP clients to execute operations
+2. **Exposes resources** for MCP clients to access data
+3. **Communicates via stdio** (standard input/output) using JSON-RPC 2.0 protocol
+4. **Reads PDF files** from a configured directory and extracts their textual content
 
-## Estructura de Archivos del Proyecto
+## Project File Structure
 
 ```
 MCP_pdf_extract/
-├── mcp_documents_server.py    # Servidor MCP principal
-├── pdf.py                      # Módulo de carga y procesamiento de PDFs
+├── mcp_documents_server.py    # Main MCP server
+├── pdf.py                      # PDF loading and processing module
 ├── app/
-│   ├── __init__.py            # Archivo vacío para hacer de app un módulo Python
-│   └── exceptions.py          # Definición de excepciones personalizadas
+│   ├── __init__.py            # Empty file to make app a Python module
+│   └── exceptions.py          # Custom exception definitions
 ├── data/
-│   └── pdfs/                  # Directorio donde se almacenan los PDFs
-├── .env                       # Variables de entorno
-├── pyproject.toml             # Configuración del proyecto con uv
-├── .venv/                     # Entorno virtual (creado con uv venv)
-└── README.md                  # Documentación básica
+│   └── pdfs/                  # Directory where PDFs are stored
+├── .env                       # Environment variables
+├── pyproject.toml             # Project configuration with uv
+├── .venv/                     # Virtual environment (created with uv venv)
+└── README.md                  # Basic documentation
 ```
 
-## Módulo: app/exceptions.py
+## Module: app/exceptions.py
 
-**Archivo completo**:
+**Full file**:
 ```python
 """Custom exceptions for the MCP PDF Extract application."""
 
@@ -49,19 +49,19 @@ class ValidationError(Exception):
     pass
 ```
 
-**Propósito**: Define excepciones personalizadas para manejo de errores específicos.
+**Purpose**: Defines custom exceptions for specific error handling.
 
-**Clases**:
-- `DocumentLoadError`: Se lanza cuando un PDF no puede ser cargado o leído
-- `ValidationError`: Se lanza cuando la validación de entrada falla
+**Classes**:
+- `DocumentLoadError`: Raised when a PDF cannot be loaded or read
+- `ValidationError`: Raised when input validation fails
 
-**IMPORTANTE**: Este archivo DEBE existir antes de ejecutar el servidor, ya que `pdf.py` lo importa en la línea 10.
+**IMPORTANT**: This file MUST exist before running the server, as `pdf.py` imports it on line 10.
 
-## Módulo: pdf.py
+## Module: pdf.py
 
-**Propósito**: Maneja toda la lógica de carga, validación y extracción de texto de archivos PDF.
+**Purpose**: Handles all logic for loading, validating, and extracting text from PDF files.
 
-### Clase PDFLoader
+### Class PDFLoader
 
 ```python
 class PDFLoader:
@@ -77,17 +77,17 @@ def __init__(self):
     self.pdf_dir = Path(os.getenv("PDF_DIR", "./data/pdfs"))
 ```
 
-**Funcionamiento**:
-1. Lee la variable de entorno `MAX_PDF_SIZE_KB` (default: 350)
-2. Lee la variable de entorno `PDF_DIR` (default: "./data/pdfs")
-3. Convierte pdf_dir a objeto Path para manejo seguro de rutas
+**Operation**:
+1. Reads environment variable `MAX_PDF_SIZE_KB` (default: 350)
+2. Reads environment variable `PDF_DIR` (default: "./data/pdfs")
+3. Converts pdf_dir to Path object for safe path handling
 
-**ERRORES COMUNES**:
-- NO hardcodear rutas absolutas
-- NO olvidar crear el archivo .env
-- NO usar valores no numéricos en MAX_PDF_SIZE_KB
+**COMMON ERRORS**:
+- DO NOT hardcode absolute paths
+- DO NOT forget to create the .env file
+- DO NOT use non-numeric values in MAX_PDF_SIZE_KB
 
-#### Método load_pdf
+#### Method load_pdf
 
 ```python
 async def load_pdf(self, filename: str) -> str:
@@ -105,46 +105,46 @@ async def load_pdf(self, filename: str) -> str:
     """
 ```
 
-**Proceso detallado**:
+**Detailed process**:
 
-1. **Validación de seguridad contra path traversal** (líneas 38-39):
+1. **Security validation against path traversal** (lines 38-39):
    ```python
    if "/" in filename or "\\" in filename:
        raise ValidationError("Invalid filename - path traversal not allowed")
    ```
-   CRÍTICO: Nunca permitir paths en el filename
+   CRITICAL: Never allow paths in the filename
 
-2. **Construcción de ruta y verificación de existencia** (líneas 42-44):
+2. **Path construction and existence verification** (lines 42-44):
    ```python
    pdf_path = self.pdf_dir / filename
    if not pdf_path.exists():
        raise DocumentLoadError(f"PDF not found: {filename}")
    ```
 
-3. **Validación de extensión** (líneas 47-48):
+3. **Extension validation** (lines 47-48):
    ```python
    if not pdf_path.suffix.lower() == ".pdf":
        raise ValidationError(f"File must be a PDF: {filename}")
    ```
 
-4. **Validación de tamaño** (líneas 51-55):
+4. **Size validation** (lines 51-55):
    ```python
    size_kb = pdf_path.stat().st_size / 1024
    if size_kb > self.max_size_kb:
        raise ValidationError(f"PDF too large: {size_kb:.1f}KB > {self.max_size_kb}KB")
    ```
 
-5. **Extracción asíncrona de texto** (líneas 58-78):
-   - Define función interna `extract_sync()` porque pdfplumber es síncrono
-   - Usa `asyncio.to_thread()` para ejecutar en thread separado
-   - Extrae texto de cada página y las une con doble salto de línea
+5. **Asynchronous text extraction** (lines 58-78):
+   - Defines internal function `extract_sync()` because pdfplumber is synchronous
+   - Uses `asyncio.to_thread()` to execute in separate thread
+   - Extracts text from each page and joins them with double line breaks
 
-**QUÉ NO HACER**:
-- NO usar `await` dentro de `extract_sync()`
-- NO abrir el PDF fuera del context manager `with`
-- NO ignorar páginas sin texto (puede ser intencional)
+**WHAT NOT TO DO**:
+- DO NOT use `await` inside `extract_sync()`
+- DO NOT open the PDF outside the `with` context manager
+- DO NOT ignore pages without text (may be intentional)
 
-#### Método list_available_pdfs
+#### Method list_available_pdfs
 
 ```python
 async def list_available_pdfs(self) -> List[str]:
@@ -155,17 +155,17 @@ async def list_available_pdfs(self) -> List[str]:
     """
 ```
 
-**Funcionamiento**:
-1. Verifica si el directorio existe (retorna lista vacía si no)
-2. Usa `glob("*.pdf")` para encontrar solo archivos PDF
-3. Extrae solo nombres de archivo con `.name`
-4. Retorna lista ordenada alfabéticamente
+**Operation**:
+1. Verifies if directory exists (returns empty list if not)
+2. Uses `glob("*.pdf")` to find only PDF files
+3. Extracts only filenames with `.name`
+4. Returns alphabetically sorted list
 
-## Módulo: mcp_documents_server.py
+## Module: mcp_documents_server.py
 
-**Propósito**: Implementa el servidor MCP que expone las capacidades de lectura de PDFs.
+**Purpose**: Implements the MCP server that exposes PDF reading capabilities.
 
-### Inicialización
+### Initialization
 
 ```python
 from mcp.server.fastmcp import FastMCP
@@ -176,12 +176,12 @@ mcp = FastMCP("DocumentMCP", log_level="ERROR")
 pdf_loader = PDFLoader()
 ```
 
-**IMPORTANTE**: 
-- El nombre "DocumentMCP" identifica al servidor
-- log_level="ERROR" reduce el ruido en los logs
-- pdf_loader es una instancia global reutilizada
+**IMPORTANT**: 
+- The name "DocumentMCP" identifies the server
+- log_level="ERROR" reduces log noise
+- pdf_loader is a reusable global instance
 
-### Herramienta: read_doc_contents
+### Tool: read_doc_contents
 
 ```python
 @mcp.tool(
@@ -193,26 +193,26 @@ async def read_document(
 ):
 ```
 
-**Propósito**: Permite a clientes MCP leer el contenido completo de un PDF.
+**Purpose**: Allows MCP clients to read the complete content of a PDF.
 
-**Parámetros**:
-- `doc_id`: Nombre del archivo PDF (ejemplo: "reporte.pdf")
+**Parameters**:
+- `doc_id`: PDF file name (example: "report.pdf")
 
-**Retorna**: String con el texto extraído del PDF
+**Returns**: String with text extracted from the PDF
 
-**Errores**: ValueError con mensaje descriptivo
+**Errors**: ValueError with descriptive message
 
-**Ejemplo de uso desde cliente MCP**:
+**Example usage from MCP client**:
 ```json
 {
   "tool": "read_doc_contents",
   "arguments": {
-    "doc_id": "informe_2024.pdf"
+    "doc_id": "report_2024.pdf"
   }
 }
 ```
 
-### Herramienta: list_available_pdfs
+### Tool: list_available_pdfs
 
 ```python
 @mcp.tool(
@@ -222,23 +222,23 @@ async def read_document(
 async def list_available_pdfs():
 ```
 
-**Propósito**: Lista todos los PDFs disponibles en formato legible.
+**Purpose**: Lists all available PDFs in readable format.
 
-**Parámetros**: Ninguno
+**Parameters**: None
 
-**Retorna**: 
-- String formateado con lista de PDFs si hay archivos
-- Mensaje "No PDF files are currently available in the directory." si está vacío
+**Returns**: 
+- Formatted string with list of PDFs if files exist
+- Message "No PDF files are currently available in the directory." if empty
 
-**Formato de salida**:
+**Output format**:
 ```
 Available PDF files:
-- documento1.pdf
-- documento2.pdf
-- informe_final.pdf
+- document1.pdf
+- document2.pdf
+- final_report.pdf
 ```
 
-### Recurso: docs://documents
+### Resource: docs://documents
 
 ```python
 @mcp.resource("docs://documents", mime_type="application/json")
@@ -248,11 +248,11 @@ async def list_docs() -> list[str]:
 
 **URI**: `docs://documents`  
 **MIME Type**: `application/json`  
-**Retorna**: Lista JSON de nombres de archivos PDF
+**Returns**: JSON list of PDF filenames
 
-**IMPORTANTE**: Este recurso retorna datos estructurados (lista), no texto formateado.
+**IMPORTANT**: This resource returns structured data (list), not formatted text.
 
-### Recurso: docs://documents/{doc_id}
+### Resource: docs://documents/{doc_id}
 
 ```python
 @mcp.resource("docs://documents/{doc_id}", mime_type="text/plain")
@@ -261,23 +261,23 @@ async def fetch_doc(doc_id: str) -> str:
 
 **URI Template**: `docs://documents/{doc_id}`  
 **MIME Type**: `text/plain`  
-**Parámetro**: `doc_id` - nombre del archivo PDF  
-**Retorna**: Contenido textual del PDF
+**Parameter**: `doc_id` - PDF filename  
+**Returns**: Textual content of the PDF
 
-**Ejemplo de URI**: `docs://documents/manual_usuario.pdf`
+**Example URI**: `docs://documents/user_manual.pdf`
 
-### Punto de Entrada
+### Entry Point
 
 ```python
 if __name__ == "__main__":
     mcp.run(transport="stdio")
 ```
 
-**CRÍTICO**: El servidor usa transporte stdio, NO HTTP. Se comunica via entrada/salida estándar.
+**CRITICAL**: The server uses stdio transport, NOT HTTP. It communicates via standard input/output.
 
-## Configuración del Proyecto
+## Project Configuration
 
-### Archivo .env
+### .env File
 
 ```
 MAX_PDF_SIZE_KB=350
@@ -285,12 +285,12 @@ PDF_DIR=./data/pdfs
 ```
 
 **Variables**:
-- `MAX_PDF_SIZE_KB`: Tamaño máximo permitido en KB (350 = 350KB)
-- `PDF_DIR`: Ruta al directorio de PDFs (relativa al proyecto)
+- `MAX_PDF_SIZE_KB`: Maximum allowed size in KB (350 = 350KB)
+- `PDF_DIR`: Path to PDFs directory (relative to project)
 
-**IMPORTANTE**: Este archivo DEBE existir aunque uses valores por defecto.
+**IMPORTANT**: This file MUST exist even if using default values.
 
-### Archivo pyproject.toml
+### pyproject.toml File
 
 ```toml
 [project]
@@ -307,30 +307,30 @@ dependencies = [
 ]
 ```
 
-**Dependencias críticas**:
-- `mcp[cli]`: Framework MCP con herramientas CLI
-- `pdfplumber`: Extracción de texto de PDFs
-- `pydantic`: Validación de datos y Field
-- `python-dotenv`: Carga de variables de entorno
+**Critical dependencies**:
+- `mcp[cli]`: MCP framework with CLI tools
+- `pdfplumber`: Text extraction from PDFs
+- `pydantic`: Data validation and Field
+- `python-dotenv`: Loading environment variables
 
-## Proceso de Instalación Completo
+## Complete Installation Process
 
-### 1. Verificar Python
+### 1. Verify Python
 
 ```bash
 python --version
-# DEBE ser 3.11 o superior
+# MUST be 3.11 or higher
 ```
 
-**ERROR COMÚN**: Python 3.9 NO funcionará. El paquete mcp requiere >=3.10.
+**COMMON ERROR**: Python 3.9 will NOT work. The mcp package requires >=3.10.
 
-### 2. Instalar uv
+### 2. Install uv
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### 3. Clonar y preparar proyecto
+### 3. Clone and prepare project
 
 ```bash
 cd /Users/edgm/Documents/Projects/AI
@@ -338,27 +338,27 @@ git clone <repository-url> MCP_pdf_extract
 cd MCP_pdf_extract
 ```
 
-### 4. Crear estructura de directorios
+### 4. Create directory structure
 
 ```bash
 mkdir -p app
 mkdir -p data/pdfs
 ```
 
-**CRÍTICO**: La estructura DEBE existir antes de ejecutar.
+**CRITICAL**: The structure MUST exist before execution.
 
-### 5. Crear archivos base
+### 5. Create base files
 
-**Crear app/__init__.py** (archivo vacío):
+**Create app/__init__.py** (empty file):
 ```bash
 touch app/__init__.py
 ```
 
-**Crear app/exceptions.py** con el contenido exacto mostrado arriba.
+**Create app/exceptions.py** with the exact content shown above.
 
-**Crear .env** con las variables mostradas arriba.
+**Create .env** with the variables shown above.
 
-### 6. Inicializar proyecto con uv
+### 6. Initialize project with uv
 
 ```bash
 uv init --name mcp-pdf-extract --python 3.11
@@ -366,50 +366,50 @@ uv venv
 uv sync
 ```
 
-**QUÉ NO HACER**:
-- NO usar `pip install` directamente
-- NO activar el venv manualmente cuando uses `uv run`
-- NO olvidar `uv sync` después de cambios en pyproject.toml
+**WHAT NOT TO DO**:
+- DO NOT use `pip install` directly
+- DO NOT manually activate the venv when using `uv run`
+- DO NOT forget `uv sync` after changes in pyproject.toml
 
-## Ejecución del Servidor
+## Server Execution
 
-### Ejecución Básica
+### Basic Execution
 
 ```bash
 uv run python mcp_documents_server.py
 ```
 
-**Comportamiento esperado**: 
-- No muestra output
-- Espera entrada JSON-RPC en stdin
-- Responde en stdout
+**Expected behavior**: 
+- Shows no output
+- Waits for JSON-RPC input on stdin
+- Responds on stdout
 
-### Prueba de Funcionamiento
+### Functionality Test
 
 ```bash
 echo '{"jsonrpc": "2.0", "method": "initialize", "params": {"protocolVersion": "0.1.0", "capabilities": {"roots": {"listChanged": true}, "sampling": {}}, "clientInfo": {"name": "test-client", "version": "1.0.0"}}, "id": 1}' | uv run python mcp_documents_server.py
 ```
 
-**Respuesta esperada**: JSON con capabilities del servidor.
+**Expected response**: JSON with server capabilities.
 
-### Ejecución con MCP Inspector
+### Execution with MCP Inspector
 
 ```bash
 npx @modelcontextprotocol/inspector
 ```
 
-En la interfaz web:
+In the web interface:
 - **Command**: `uv`
 - **Arguments**: `run --with mcp mcp run mcp_documents_server.py`
 
-**ERROR COMÚN**: Si aparece "uv" command not found, verificar:
-1. Que estés en el directorio del proyecto
-2. Que uv esté instalado globalmente
-3. Que el path esté configurado correctamente
+**COMMON ERROR**: If "uv" command not found appears, verify:
+1. That you're in the project directory
+2. That uv is installed globally
+3. That the path is configured correctly
 
-## Integración con Claude Desktop
+## Claude Desktop Integration
 
-Editar `~/Library/Application Support/Claude/claude_desktop_config.json`:
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
@@ -429,124 +429,124 @@ Editar `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-**IMPORTANTE**: Usar ruta absoluta en --directory.
+**IMPORTANT**: Use absolute path in --directory.
 
-## Errores Comunes y Soluciones
+## Common Errors and Solutions
 
 ### Error: ModuleNotFoundError: No module named 'mcp'
 
-**Causa**: Python < 3.10 o dependencias no instaladas  
-**Solución**: Verificar Python version y ejecutar `uv sync`
+**Cause**: Python < 3.10 or dependencies not installed  
+**Solution**: Verify Python version and run `uv sync`
 
 ### Error: ModuleNotFoundError: No module named 'app.exceptions'
 
-**Causa**: Falta crear el módulo app  
-**Solución**: Crear app/__init__.py y app/exceptions.py
+**Cause**: Missing app module  
+**Solution**: Create app/__init__.py and app/exceptions.py
 
 ### Error: spawn uv ENOENT
 
-**Causa**: Inspector no encuentra el comando uv  
-**Solución**: Usar ruta completa o verificar instalación de uv
+**Cause**: Inspector can't find uv command  
+**Solution**: Use full path or verify uv installation
 
 ### Error: PDF not found
 
-**Causa**: No hay PDFs en data/pdfs/  
-**Solución**: Agregar archivos PDF al directorio
+**Cause**: No PDFs in data/pdfs/  
+**Solution**: Add PDF files to the directory
 
 ### Error: Invalid request parameters
 
-**Causa**: Protocolo MCP mal formado  
-**Solución**: Usar formato correcto de JSON-RPC 2.0
+**Cause**: Malformed MCP protocol  
+**Solution**: Use correct JSON-RPC 2.0 format
 
-## Flujo de Ejecución Detallado
+## Detailed Execution Flow
 
-1. **Cliente MCP inicia el servidor** via stdio
-2. **Cliente envía mensaje initialize** con sus capacidades
-3. **Servidor responde** con sus capacidades (tools y resources)
-4. **Cliente envía notifications/initialized**
-5. **Cliente puede ahora**:
-   - Llamar tools con `tools/call`
-   - Listar resources con `resources/list`
-   - Leer resources con `resources/read`
-6. **Servidor procesa** cada request y responde via stdout
-7. **Comunicación continúa** hasta que el cliente cierra la conexión
+1. **MCP client starts the server** via stdio
+2. **Client sends initialize message** with its capabilities
+3. **Server responds** with its capabilities (tools and resources)
+4. **Client sends notifications/initialized**
+5. **Client can now**:
+   - Call tools with `tools/call`
+   - List resources with `resources/list`
+   - Read resources with `resources/read`
+6. **Server processes** each request and responds via stdout
+7. **Communication continues** until client closes the connection
 
-## Validaciones de Seguridad Implementadas
+## Implemented Security Validations
 
-1. **Path Traversal Prevention**: No permite "/" o "\" en nombres de archivo
-2. **File Size Validation**: Limita tamaño máximo de PDFs
-3. **Extension Validation**: Solo acepta archivos .pdf
-4. **Directory Isolation**: Solo lee del directorio configurado
-5. **Error Handling**: Nunca expone rutas del sistema en errores
+1. **Path Traversal Prevention**: Doesn't allow "/" or "\" in filenames
+2. **File Size Validation**: Limits maximum PDF size
+3. **Extension Validation**: Only accepts .pdf files
+4. **Directory Isolation**: Only reads from configured directory
+5. **Error Handling**: Never exposes system paths in errors
 
-## Testing Manual Completo
+## Complete Manual Testing
 
-### 1. Verificar instalación
+### 1. Verify installation
 
 ```bash
 cd /Users/edgm/Documents/Projects/AI/MCP_pdf_extract
 uv --version
-python --version  # Debe ser >= 3.11
+python --version  # Must be >= 3.11
 ```
 
-### 2. Verificar dependencias
+### 2. Verify dependencies
 
 ```bash
 uv pip list | grep -E "(mcp|pdfplumber|pydantic|dotenv)"
 ```
 
-### 3. Agregar PDF de prueba
+### 3. Add test PDF
 
 ```bash
-# Copiar cualquier PDF a data/pdfs/
-cp ~/Downloads/ejemplo.pdf data/pdfs/
+# Copy any PDF to data/pdfs/
+cp ~/Downloads/example.pdf data/pdfs/
 ```
 
-### 4. Probar herramientas
+### 4. Test tools
 
 ```bash
-# Listar PDFs disponibles
+# List available PDFs
 echo '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "list_available_pdfs", "arguments": {}}, "id": 1}' | uv run python mcp_documents_server.py
 
-# Leer un PDF específico
-echo '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "read_doc_contents", "arguments": {"doc_id": "ejemplo.pdf"}}, "id": 2}' | uv run python mcp_documents_server.py
+# Read a specific PDF
+echo '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "read_doc_contents", "arguments": {"doc_id": "example.pdf"}}, "id": 2}' | uv run python mcp_documents_server.py
 ```
 
-## Mantenimiento y Extensión
+## Maintenance and Extension
 
-### Para agregar nueva herramienta
+### To add new tool
 
 ```python
 @mcp.tool(
-    name="nombre_herramienta",
-    description="Descripción clara de qué hace",
+    name="tool_name",
+    description="Clear description of what it does",
 )
-async def mi_herramienta(
-    parametro: str = Field(description="Descripción del parámetro"),
+async def my_tool(
+    parameter: str = Field(description="Parameter description"),
 ):
-    # Implementación
+    # Implementation
     pass
 ```
 
-### Para agregar nuevo recurso
+### To add new resource
 
 ```python
 @mcp.resource("protocol://path/{param}", mime_type="text/plain")
-async def mi_recurso(param: str) -> str:
-    # Implementación
+async def my_resource(param: str) -> str:
+    # Implementation
     pass
 ```
 
-### Para modificar configuración
+### To modify configuration
 
-1. Agregar variable a .env
-2. Leerla en PDFLoader.__init__ con os.getenv()
-3. Documentar en README.md
+1. Add variable to .env
+2. Read it in PDFLoader.__init__ with os.getenv()
+3. Document in README.md
 
-## Notas Finales para RAG
+## Final Notes for RAG
 
-Este documento contiene TODA la información necesaria para ejecutar el proyecto MCP_pdf_extract sin errores. Cada función está documentada con su propósito exacto, parámetros, retornos y errores posibles. Los ejemplos de código son del proyecto real, no inventados. Las rutas y configuraciones son las exactas del sistema donde se desarrolló.
+This document contains ALL the necessary information to run the MCP_pdf_extract project without errors. Each function is documented with its exact purpose, parameters, returns, and possible errors. The code examples are from the real project, not invented. The paths and configurations are the exact ones from the system where it was developed.
 
-**Palabras clave para búsqueda**: MCP, PDF, FastMCP, pdfplumber, Model Context Protocol, stdio, JSON-RPC, Python 3.11, uv, DocumentMCP, PDFLoader, read_doc_contents, list_available_pdfs
+**Keywords for search**: MCP, PDF, FastMCP, pdfplumber, Model Context Protocol, stdio, JSON-RPC, Python 3.11, uv, DocumentMCP, PDFLoader, read_doc_contents, list_available_pdfs
 
-**Contexto de ejecución**: macOS, Python 3.11, uv como gestor de paquetes, directorio base /Users/edgm/Documents/Projects/AI/MCP_pdf_extract
+**Execution context**: macOS, Python 3.11, uv as package manager, base directory /Users/edgm/Documents/Projects/AI/MCP_pdf_extract
