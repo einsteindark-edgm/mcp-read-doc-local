@@ -2,6 +2,72 @@
 
 A Model Context Protocol (MCP) server that provides PDF document reading capabilities. This server allows MCP clients to list and read PDF documents from a specified directory.
 
+## Architecture
+
+```mermaid
+graph TB
+    subgraph "MCP Client Layer"
+        Client[MCP Client<br/>Claude Desktop / Inspector]
+    end
+    
+    subgraph "MCP Server Layer"
+        Server[MCP Documents Server<br/>mcp_documents_server.py]
+        FastMCP[FastMCP Framework]
+        
+        Server --> FastMCP
+    end
+    
+    subgraph "Business Logic Layer"
+        PDFLoader[PDF Loader<br/>pdf.py]
+        Exceptions[Exception Handler<br/>app/exceptions.py]
+        
+        PDFLoader --> Exceptions
+    end
+    
+    subgraph "Data Layer"
+        PDFFiles[PDF Files<br/>data/pdfs/]
+        EnvConfig[Environment Config<br/>.env]
+    end
+    
+    Client <-->|"JSON-RPC over stdio"| Server
+    
+    Server -->|"Tools & Resources"| PDFLoader
+    PDFLoader -->|"Async Read"| PDFFiles
+    PDFLoader -->|"Config"| EnvConfig
+    
+    style Client fill:#e1f5fe
+    style Server fill:#fff3e0
+    style PDFLoader fill:#f3e5f5
+    style PDFFiles fill:#e8f5e9
+```
+
+### Component Communication
+
+```mermaid
+sequenceDiagram
+    participant C as MCP Client
+    participant S as MCP Server
+    participant P as PDF Loader
+    participant F as File System
+    
+    C->>S: Initialize connection
+    S-->>C: Server capabilities
+    
+    C->>S: List documents (resource)
+    S->>P: list_available_pdfs()
+    P->>F: Read directory
+    F-->>P: PDF file list
+    P-->>S: Document metadata
+    S-->>C: Document list
+    
+    C->>S: Read document (tool)
+    S->>P: load_pdf(doc_id)
+    P->>F: Read PDF file
+    P->>P: Extract text
+    P-->>S: Document content
+    S-->>C: PDF text content
+```
+
 ## Features
 
 - List available PDF documents
