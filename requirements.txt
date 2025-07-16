@@ -1,0 +1,4 @@
+mcp[cli]
+pydantic
+pdfplumber
+python-dotenv

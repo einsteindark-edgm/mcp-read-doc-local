@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "pdf-extractor": {
+      "command": "uv",
+      "args": ["--directory", "/Users/edgm/Documents/Projects/AI/MCP_pdf_extract", "run", "python", "mcp_documents_server.py"],
+      "env": {}
+    }
+  }
+}
